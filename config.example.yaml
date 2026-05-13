@@ -1,0 +1,31 @@
+# 复制为 config.yaml 后按需修改
+
+# Excel 路径：留空则使用「脚本目录」下的 search_list.xlsx
+excel_path: ""
+
+# 工作表名
+sheet_name: "搜索列表"
+
+# 列名（与 Excel 表头一致）
+columns:
+  keyword: "关键词"       # 必填：要搜索的内容
+  status: "状态"          # 程序写入：成功/失败/跳过
+  result: "结果摘要"      # 程序写入：简短说明
+  screenshot: "截图"      # 程序写入：嵌入图片（列宽建议调大）
+
+# 自动化参数（微信 UI 因版本/语言/缩放不同，需自行调参）
+automation:
+  # 每步之间的基础等待（秒），网络慢可加大
+  step_delay_sec: 0.8
+  # 搜索后等待界面稳定再截图
+  after_search_wait_sec: 1.5
+  # 截图区域：相对「主显示器」的像素区域 left, top, width, height
+  # 留空则截取全屏（文件会很大）；建议框选微信聊天窗口区域
+  capture_region: null
+  # 示例（需按你屏幕实测）:
+  # capture_region: [100, 80, 900, 700]
+
+# 热键（pyautogui 格式，与系统/微信快捷键一致时再启用）
+hotkeys:
+  # 打开微信搜索（常见为 Ctrl+F / Cmd+F，以你客户端为准）
+  open_search: "command+f"   # Windows 可改为 "ctrl+f"
