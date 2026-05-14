@@ -1,45 +1,61 @@
-# 微信搜索 + Excel 回写（示例工具）
+# 微信搜索 + Excel 回写
 
-## 功能概述
+从 Excel 读取关键词，通过键鼠模拟在微信桌面端逐个搜索并截图，将状态、摘要、截图回写到同一 Excel。
 
-1. 在指定目录（默认同脚本目录）维护 `search_list.xlsx`，表头需包含「关键词」列（可在 `config.yaml` 改列名）。
-2. 运行 `python main.py`：按行读取关键词，通过**系统级键盘快捷键**在微信中触发搜索并截图，将**状态、结果摘要、截图**写回 Excel。
-3. 运行前请**登录微信**并打开主窗口；倒计时期间切换到微信，倒计时结束后**不要操作键鼠**。
+## 功能特性
 
-## 重要说明（合规与稳定性）
+- 批量搜索：按 Excel 行逐个执行微信搜索
+- 自动截图：搜索后自动截取指定区域并嵌入 Excel
+- 断点续跑：已成功的行自动跳过，中断后重跑不会重复
+- 跨平台：macOS / Windows 均可运行
+- 可打包：支持 PyInstaller 打包为单文件 exe 分发
 
-- 微信**无官方个人号自动化接口**。本工具使用 `pyautogui` 模拟快捷键与输入，可能违反腾讯用户协议，请自行评估合规风险，仅限个人学习与内部效率场景。
-- 不同微信版本、系统语言、显示缩放、窗口布局会导致**同一套快捷键/流程失效**，必须在 `config.yaml` 中按你的环境调参，必要时自行改 `automation.py`（例如增加固定坐标点击、图像模板匹配等）。
+## 合规声明
 
-## 环境
+微信无官方个人号自动化接口。本工具使用 `pyautogui` 模拟快捷键与输入，可能违反腾讯用户协议，请自行评估合规风险，仅限个人学习与内部效率场景。
 
-- Python 3.10+（建议）
+## 环境要求
+
+- Python 3.10+
 - macOS / Windows
 
+## 安装
+
 ```bash
-cd tools/wechat-excel-automation
+cd wechat-excel-automation
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## 配置文件
+## 配置
 
-复制 `config.example.yaml` 为 `config.yaml`（或改用 `config.json`）。
+复制 `config.example.yaml` 为 `config.yaml`：
 
-- **Windows** 请将 `hotkeys.open_search` 改为 `ctrl+f`（若你的微信搜索快捷键不同，以实际为准）。
-- **capture_region**：建议填写 `[left, top, width, height]` 只截微信窗口区域，避免全屏图过大；可用系统截图工具查看坐标估算。
-- **excel_path**：留空则使用脚本目录下的 `search_list.xlsx`。
+```bash
+cp config.example.yaml config.yaml
+```
+
+关键配置项：
+
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `excel_path` | Excel 路径，留空则用脚本目录下的 `search_list.xlsx` | `""` |
+| `sheet_name` | 工作表名 | `搜索列表` |
+| `hotkeys.open_search` | 打开搜索的快捷键 | `command+f`（Windows 改为 `ctrl+f`） |
+| `automation.step_delay_sec` | 每步间隔秒数 | `0.8` |
+| `automation.after_search_wait_sec` | 搜索后等待截图的秒数 | `1.5` |
+| `automation.capture_region` | 截图区域 `[left, top, width, height]`，null 为全屏 | `null` |
 
 ## 准备 Excel
 
-表头示例（第一行）：
+表头格式（第一行）：
 
 | 关键词 | 状态 | 结果摘要 | 截图 |
 |--------|------|----------|------|
-| 测试联系人 | | | |
+| 某群名或联系人 | | | |
 
-生成空模板：
+生成空白模板：
 
 ```bash
 python create_template.py
@@ -47,39 +63,78 @@ python create_template.py
 
 ## 运行
 
-1. 打开微信主界面。
-2. 执行：
+1. 登录微信，打开主窗口
+2. 执行脚本：
 
 ```bash
 python main.py --countdown 5
 ```
 
-倒计时内切换到微信；结束后脚本会逐行搜索并保存 Excel。
+3. 倒计时内将鼠标移到微信窗口内，倒计时结束后不要操作键鼠
 
-## 打包为可执行文件
+参数说明：
 
-使用 [PyInstaller](https://pyinstaller.org/)：
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `-c / --config` | 配置文件路径 | 自动查找同目录 `config.yaml` |
+| `--countdown` | 开始前倒计时秒数 | `5` |
+
+## 打包为 Windows EXE
+
+### 方式一：本地打包（需 Windows 环境）
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --name wechat-excel-search main.py
+pyinstaller --onefile --name wechat-search --hidden-import=yaml main.py
 ```
 
-- Windows 产物在 `dist/wechat-excel-search.exe`。
-- macOS 产物在 `dist/wechat-excel-search`；首次可能需在「隐私与安全性」中允许辅助功能/录屏权限（系统设置里为终端或该 app 勾选）。
+产物在 `dist/wechat-search.exe`。
 
-请将 `config.yaml`、`search_list.xlsx` 与可执行文件放在同一目录分发（或让用户通过 `excel_path` 指到维护目录）。
+### 方式二：GitHub Actions 自动构建
 
-## 中文关键词与剪贴板
+项目已包含 `.github/workflows/build-windows.yml`，推送 tag 即可触发：
 
-非英文关键词通过剪贴板粘贴。macOS 可能弹出「是否允许访问剪贴板」授权，请允许终端或打包后的 app。
+```bash
+git tag v1.0
+git push --tags
+```
+
+构建完成后在 GitHub Actions 页面下载产物。也可在 Actions 页面手动点击 "Run workflow" 触发。
+
+### 分发结构
+
+将以下文件放在同一目录交付给用户：
+
+```
+wechat-search/
+├── wechat-search.exe
+├── config.yaml          # 用户按需修改
+├── search_list.xlsx     # 填入关键词
+└── output/              # 运行后自动生成
+    └── screenshots/
+```
+
+## macOS 权限
+
+首次运行可能需要在「系统设置 → 隐私与安全性」中授权：
+
+- 辅助功能（键鼠控制）
+- 屏幕录制（截图）
+
+为终端或打包后的 app 勾选对应权限。
+
+## 中文关键词
+
+非 ASCII 关键词通过剪贴板粘贴输入。macOS 可能弹出剪贴板访问授权提示，请允许。
 
 ## 目录结构
 
 | 文件 | 说明 |
 |------|------|
-| `main.py` | 入口 |
-| `excel_io.py` | Excel 读写与嵌入图片 |
-| `automation.py` | 截图与搜索键序 |
-| `create_template.py` | 生成示例 xlsx |
-| `config.example.yaml` | 配置样例 |
+| `main.py` | 入口：加载配置、遍历关键词、调度搜索与回写 |
+| `automation.py` | 键鼠自动化：快捷键、输入、截图 |
+| `excel_io.py` | Excel 读写：读取关键词、写状态、嵌入截图 |
+| `create_template.py` | 生成空白 Excel 模板 |
+| `config.example.yaml` | 配置文件样例 |
+| `requirements.txt` | Python 依赖 |
+| `.github/workflows/build-windows.yml` | GitHub Actions 自动打包 |
