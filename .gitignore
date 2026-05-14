@@ -7,3 +7,5 @@ search_list.xlsx
 dist/
 build/
 *.spec
+/Windows
+windows.zip
